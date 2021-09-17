@@ -1,0 +1,19 @@
+syntax = "proto2";
+import "protobuf_net/bcl.proto"; // schema for protobuf-net's handling of core .NET types
+
+message ProtoBufData {
+   repeated string Headers = 1;
+   repeated ProtoBufDataPoint Data = 2;
+   repeated string Errors = 3;
+}
+message ProtoBufDataList {
+   repeated string Keys = 1;
+   repeated ProtoBufData ProtoBufDataObjs = 2;
+   repeated string InfoMessages = 3;
+   repeated string ErrorMessages = 4;
+}
+message ProtoBufDataPoint {
+   optional string String = 1;
+   optional .bcl.DateTime Date = 2;
+   optional double Number = 3;
+}

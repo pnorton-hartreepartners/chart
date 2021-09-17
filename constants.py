@@ -1,0 +1,10 @@
+CURVE_ID = 'curve_id'
+OBSERVATION_DATE = 'observation_date'
+CONTRACT_START = 'contract_start'
+EXPIRY_DATE = 'expiry_date'
+VALUE = 'value'
+LONG_SCREEN_NAME = 'long_screen_name'
+CURRENCY = 'currency'
+UOM = 'uom'
+
+hdq_expression = '{method}(\'{symbol}\')'
