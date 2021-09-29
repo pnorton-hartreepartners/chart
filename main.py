@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from hdq_utils import getHdqPbAsDF
 from metadata import metadata
-from constants import CURVE_ID, OBSERVATION_DATE, CONTRACT_START, VALUE, EXPIRY_DATE, DAYS_TO_EXPIRY, hdq_expression
+from constants import CURVE_ID, OBSERVATION_DATE, CONTRACT_START, VALUE, EXPIRY_DATE, DAYS_FROM_EXPIRY, hdq_expression
 
 
 config_rbob_ebob_builtup_arb = [
@@ -68,8 +68,8 @@ def enrich_ts(df, metadata_df):
     return pd.merge(df, metadata_df, left_on=CURVE_ID, right_index=True)
 
 
-def calc_days_to_expiry(df):
-    df['days_to_expiry'] = df[EXPIRY_DATE] - df.index.get_level_values(OBSERVATION_DATE)
+def calc_days_from_expiry(df):
+    df[DAYS_FROM_EXPIRY] = df.index.get_level_values(OBSERVATION_DATE) - df[EXPIRY_DATE]
     return df
 
 
@@ -84,25 +84,33 @@ def reset_index_for_chart_data(df, index_columns):
 def pivot_for_chart_data(s, chart_index):
     df = s.to_frame()
     df.reset_index(inplace=True)
-    return df.pivot(index=chart_index, columns=CURVE_ID)
+    df = df.pivot(index=chart_index, columns=CURVE_ID)
+    # the value column name is added to the column index
+    # remove it here
+    df.columns = df.columns.droplevel(None)
+    return df
 
 
 if __name__ == '__main__':
-    print('PyCharm')
     symbols = ['IPEBRT19Z', 'IPEBRT20Z', 'IPEBRT21Z']
-    methods = ['TimeSeries', 'FutureExpiry']
 
-    df_expiries = get_hdq_expiries(symbols=['IPEBRT19Z', 'IPEBRT20Z', 'IPEBRT21Z'])
+    df_expiries = get_hdq_expiries(symbols=symbols)
 
-    df_ts = build_ts_df(symbols=['IPEBRT19Z', 'IPEBRT20Z', 'IPEBRT21Z'], metadata=metadata)
+    df_ts = build_ts_df(symbols=symbols, metadata=metadata)
 
+    # enrich with expiry dates
     df_ts_enrich = enrich_ts(df_ts, df_expiries)
 
-    df = calc_days_to_expiry(df_ts_enrich)
+    # calculate days from expiry
+    df = calc_days_from_expiry(df_ts_enrich)
 
-    df = reset_index_for_chart_data(df, [DAYS_TO_EXPIRY])
+    # make days_from_expiry the new index
+    df = reset_index_for_chart_data(df, [DAYS_FROM_EXPIRY])
 
-    df = pivot_for_chart_data(df, chart_index=DAYS_TO_EXPIRY)
+    # pivot the data ready to chart it
+    df = pivot_for_chart_data(df, chart_index=DAYS_FROM_EXPIRY)
 
     df.plot(kind='line')
+    plt.show()
+    print('great')
 
