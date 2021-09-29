@@ -2,4 +2,5 @@ conda install python=3.6
 conda install -c pythonnet pythonnet
 conda install pandas
 conda install protobuf
+conda install matplotlib
 

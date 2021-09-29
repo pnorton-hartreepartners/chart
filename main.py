@@ -1,7 +1,8 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 from hdq_utils import getHdqPbAsDF
 from metadata import metadata
-from constants import CURVE_ID, OBSERVATION_DATE, CONTRACT_START, VALUE, hdq_expression
+from constants import CURVE_ID, OBSERVATION_DATE, CONTRACT_START, VALUE, EXPIRY_DATE, DAYS_TO_EXPIRY, hdq_expression
 
 
 config_rbob_ebob_builtup_arb = [
@@ -63,6 +64,29 @@ def get_hdq_expiries(symbols):
     return df_expiries
 
 
+def enrich_ts(df, metadata_df):
+    return pd.merge(df, metadata_df, left_on=CURVE_ID, right_index=True)
+
+
+def calc_days_to_expiry(df):
+    df['days_to_expiry'] = df[EXPIRY_DATE] - df.index.get_level_values(OBSERVATION_DATE)
+    return df
+
+
+def reset_index_for_chart_data(df, index_columns):
+    # we always need the curve_id
+    index_columns.append(CURVE_ID)
+    df.reset_index(inplace=True)
+    df.set_index(index_columns, drop=True, inplace=True)
+    return df[VALUE]
+
+
+def pivot_for_chart_data(s, chart_index):
+    df = s.to_frame()
+    df.reset_index(inplace=True)
+    return df.pivot(index=chart_index, columns=CURVE_ID)
+
+
 if __name__ == '__main__':
     print('PyCharm')
     symbols = ['IPEBRT19Z', 'IPEBRT20Z', 'IPEBRT21Z']
@@ -72,8 +96,13 @@ if __name__ == '__main__':
 
     df_ts = build_ts_df(symbols=['IPEBRT19Z', 'IPEBRT20Z', 'IPEBRT21Z'], metadata=metadata)
 
-    print(df_ts)
-    print(df_expiries)
+    df_ts_enrich = enrich_ts(df_ts, df_expiries)
 
+    df = calc_days_to_expiry(df_ts_enrich)
 
+    df = reset_index_for_chart_data(df, [DAYS_TO_EXPIRY])
+
+    df = pivot_for_chart_data(df, chart_index=DAYS_TO_EXPIRY)
+
+    df.plot(kind='line')
 
