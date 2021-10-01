@@ -10,5 +10,6 @@ CURRENCY = 'currency'
 UOM = 'uom'
 SYMBOLS = 'symbols'
 SYMBOL = 'symbol'
+PROCESSOR = 'processor'
 
 hdq_expression = '{method}(\'{symbol}\')'
