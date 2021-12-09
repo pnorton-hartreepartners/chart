@@ -92,9 +92,10 @@ curve_metadata = {
         CURRENCY: 'USD'
     },
     1000001: {
-        'symbols': ['CMEWTI19Z', 'CMEWTI20Z', 'CMEWTI21Z'],
-        'names': {LONG_SCREEN_NAME: 'CME WTI Futures'},
-        UOM: 'bbl',
+        'symbols': ['NAPphCIFNWE'],
+        'names': {LONG_SCREEN_NAME: 'Naphtha curve'},
+        PROCESSOR: HdqProcessor,
+        UOM: 'MT',
         CURRENCY: 'USD'
     },
 }
