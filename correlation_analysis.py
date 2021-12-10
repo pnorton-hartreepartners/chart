@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 from pprint import pprint as pp
 import itertools
@@ -131,14 +132,19 @@ def build_correlation_data():
             charts_dict[key] = {}
             charts_dict[key]['df'] = chart_df
             charts_dict[key]['shape'] = chart_df.shape
+            corr_matrix = chart_df.corr(method='pearson', min_periods=1)
+            corr_scalar = np.dot(np.ones([1, 2]), corr_matrix.values).flatten()[0]
+            charts_dict[key]['pearson'] = corr_scalar
 
     return charts_dict
 
 
 if __name__ == '__main__':
     env = DEV
-    build_and_save_clean_data(trader_curves)
+    #build_and_save_clean_data(trader_curves)
     charts_dict = build_correlation_data()
 
+    for key, values in charts_dict.items():
+        print(key, values['pearson'])
     pass
 
