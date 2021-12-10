@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from pprint import pprint as pp
+import itertools
 
 from mosaic.constants import DEV, path
 from mosaic.mosaic_api_templates import api_config_dict
@@ -90,7 +91,10 @@ def build_and_save_clean_data(trader_curves):
 
 
 def build_correlation_data():
+    all_keys_dict = {}
+    all_df = pd.DataFrame()
     for expression, type_ in trader_curves:
+        all_keys_dict[expression] = {}
         file_for_df = expression + '.pkl'
         pathfile = os.path.join(path, file_for_df)
         df = pd.read_pickle(pathfile)
@@ -99,12 +103,42 @@ def build_correlation_data():
         multiindex = list(df.index)
         multiindex = [(i[1], i[2]) for i in multiindex]  # sorry
         keys = list(set(multiindex))
+        all_keys_dict[expression] = keys
+
+        # one big df with all the lovely data
+        all_df = pd.concat([all_df, df], axis='index')
+
+    # from dict to list of lists
+    all_keys = [all_keys_dict[expression] for expression in all_keys_dict.keys()]
+    # create pairs eg selecting two from four products results in six pairs
+    corr_list = list(itertools.combinations(all_keys, 2))
+    charts_dict = {}
+    for product_x, product_y in corr_list:
+        # then for each of the pairs we need a cartesian product of spreads
+        # eg if each has ten months of spreads then we get 100 correlations to check
+        charts = list(itertools.product(product_x, product_y))
+        for chart in charts:
+            x, y = chart
+            x_symbol, x_contract = x
+            x_data = all_df.loc[slice(None), x_symbol, x_contract]
+
+            y_symbol, y_contract = y
+            y_data = all_df.loc[slice(None), y_symbol, y_contract]
+
+            chart_df = pd.merge(x_data, y_data, how='inner', left_index=True, right_index=True, suffixes=['_x', '_y'])
+
+            key = ((x_symbol, x_contract), (y_symbol, y_contract))
+            charts_dict[key] = {}
+            charts_dict[key]['df'] = chart_df
+            charts_dict[key]['shape'] = chart_df.shape
+
+    return charts_dict
 
 
 if __name__ == '__main__':
     env = DEV
     build_and_save_clean_data(trader_curves)
-    build_correlation_data()
+    charts_dict = build_correlation_data()
 
     pass
 
