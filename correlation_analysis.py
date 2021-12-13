@@ -1,12 +1,12 @@
 import pandas as pd
-import numpy as np
 import os
 from pprint import pprint as pp
 from mosaic.constants import DEV, path
 from mosaic.mosaic_api_templates import api_config_dict
 from mosaic.mosaic_wapi import build_partial_url_kwargs, build_url, post_any_api, process_chart_data
 
-file_for_df = 'correlation.pkl'
+file_for_data = 'correlation_data.pkl'
+xlsx_for_results = 'correlation_results.xlsx'
 
 trader_curves = [('BRT-F', 'Dynamic'),
                  ('EBOB-S', 'Combo'),
@@ -121,12 +121,23 @@ def get_all_keys():
 
 
 def calc_correlation(df):
-    corr_matrix = df.corr(method='pearson', min_periods=1)
-    corr_scalar = np.dot(np.ones([1, 2]), corr_matrix.values).flatten()[0]
-    return df
+    group_list = ['symbol_x', 'contract_x', 'symbol_y', 'contract_y']
+    value_list = ['value_x', 'value_y']
+    corr_matrix_df = df.groupby(group_list)[value_list].corr(method='pearson')
+    count_df = df.groupby(group_list).count()['value_x']
+
+    # function returns a matrix; we only want an upper (or lower) triangle value
+    mask = corr_matrix_df.index.get_level_values(None) == 'value_y'
+    corr_df = corr_matrix_df[mask]['value_x']
+    corr_df.index = corr_df.index.droplevel(level=None)
+
+    # rename and join
+    corr_df.name = 'corr'
+    count_df.name = 'count'
+    return pd.merge(corr_df, count_df, left_index=True, right_index=True)
 
 
-def build_correlation_data(df):
+def build_self_join_data(df):
     df.reset_index(['symbol', 'contract'], drop=False, inplace=True)
     chart_df = pd.merge(df, df, how='inner',
                         left_index=True, right_index=True,
@@ -136,20 +147,24 @@ def build_correlation_data(df):
 
 if __name__ == '__main__':
     env = DEV
-    pathfile = os.path.join(path, file_for_df)
+    pathfile = os.path.join(path, file_for_data)
 
-    build_and_save = True
+    build_and_save = False
 
     if build_and_save:
         # build the data
-        df = collect_and_build_clean_data(trader_curves, start='2021-01-01', periods=2)
+        df = collect_and_build_clean_data(trader_curves, start='2021-01-01', periods=13)
         df.to_pickle(pathfile)
 
     else:
         # load the data
         df = pd.read_pickle(pathfile)
 
-    cartesian_product_df = build_correlation_data(df)
-    cartesian_product_df = calc_correlation(cartesian_product_df)
+    cartesian_product_df = build_self_join_data(df)
+    correlation_df = calc_correlation(cartesian_product_df)
+    correlation_df.to_clipboard()
 
-
+    # save the results
+    pathfile = os.path.join(path, xlsx_for_results)
+    with pd.ExcelWriter(pathfile) as writer:
+        correlation_df.to_excel(writer, merge_cells=False, sheet_name='corr')

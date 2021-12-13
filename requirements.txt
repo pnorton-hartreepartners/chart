@@ -3,4 +3,5 @@ conda install -c pythonnet pythonnet
 conda install pandas
 conda install protobuf
 conda install matplotlib
+conda install -c anaconda openpyxl
 
