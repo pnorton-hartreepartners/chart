@@ -4,6 +4,10 @@ from pprint import pprint as pp
 from mosaic.constants import DEV, path
 from mosaic.mosaic_api_templates import api_config_dict
 from mosaic.mosaic_wapi import build_partial_url_kwargs, build_url, post_any_api, process_chart_data
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 
 file_for_data = 'correlation_data.pkl'
 xlsx_for_results = 'correlation_results.xlsx'
@@ -45,6 +49,10 @@ def _build_timespreads(start, periods):
 def _build_timespread_chartlet_name(product, contract_list):
     front, back = contract_list
     return product + ' | ' + front + ' minus ' + back
+
+
+def _split_timespread_chartlet_name(ss):
+    return ss
 
 
 def _build_chartlets(expression, type_, contracts, name_func):
@@ -113,7 +121,7 @@ def get_all_keys():
     for expression, type_ in trader_curves:
         all_keys_dict[expression] = {}
         # get keys
-        multiindex = list(df.index)
+        multiindex = list(data_df.index)
         multiindex = [(i[1], i[2]) for i in multiindex]  # sorry
         keys = list(set(multiindex))
         all_keys_dict[expression] = keys
@@ -145,26 +153,61 @@ def build_self_join_data(df):
     return chart_df
 
 
+def create_scatter_matrix1(df):
+    contract = '202110 minus 202111'
+    mask_x = df['contract_x'] == contract
+    mask_y = df['contract_y'] == contract
+    selection_df = df[mask_x & mask_y]
+    fig = px.scatter(data_frame=selection_df,
+                     x='value_x',
+                     y='value_y',
+                     facet_col='symbol_x', facet_row='symbol_y',
+                     trendline='ols')
+    fig.show()
+
+
+def create_scatter_matrix2(df):
+    contract = '202110 minus 202111'
+    mask = df['contract'] == contract
+    selection_df = df[mask]
+    chart_df = selection_df.pivot(columns='symbol', values='value')
+    symbols = chart_df.columns
+    fig = px.scatter(x=chart_df['value_x'], y=chart_df['value_y'], facet_col=symbol_x, facet_row=symbol_y)
+    # fig = make_subplots(rows=len(symbols), cols=len(symbols))
+    # for i, row in enumerate(symbols):
+    #     for j, col in enumerate(symbols):
+    #         fig.add_trace(px.scatter(x=chart_df[row], y=chart_df[col]), row=i + 1, col=j + 1)
+    fig.show()
+
+
 if __name__ == '__main__':
     env = DEV
     pathfile = os.path.join(path, file_for_data)
 
-    build_and_save = False
+    build_and_save_data = False
+    calc_and_save_corr = False
+    create_scatter_charts = True
 
-    if build_and_save:
+    if build_and_save_data:
         # build the data
-        df = collect_and_build_clean_data(trader_curves, start='2021-01-01', periods=13)
-        df.to_pickle(pathfile)
+        data_df = collect_and_build_clean_data(trader_curves, start='2021-01-01', periods=13)
+        data_df.to_pickle(pathfile)
 
     else:
         # load the data
-        df = pd.read_pickle(pathfile)
+        data_df = pd.read_pickle(pathfile)
 
-    cartesian_product_df = build_self_join_data(df)
-    correlation_df = calc_correlation(cartesian_product_df)
-    correlation_df.to_clipboard()
+    # build the data ready for analysis
+    cartesian_product_df = build_self_join_data(data_df)
 
-    # save the results
-    pathfile = os.path.join(path, xlsx_for_results)
-    with pd.ExcelWriter(pathfile) as writer:
-        correlation_df.to_excel(writer, merge_cells=False, sheet_name='corr')
+    if calc_and_save_corr:
+        correlation_df = calc_correlation(cartesian_product_df)
+        correlation_df.to_clipboard()
+
+        # save the results
+        pathfile = os.path.join(path, xlsx_for_results)
+        with pd.ExcelWriter(pathfile) as writer:
+            correlation_df.to_excel(writer, merge_cells=False, sheet_name='corr')
+
+    if create_scatter_charts:
+        create_scatter_matrix1(cartesian_product_df)

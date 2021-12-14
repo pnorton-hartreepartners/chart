@@ -4,4 +4,6 @@ conda install pandas
 conda install protobuf
 conda install matplotlib
 conda install -c anaconda openpyxl
+conda install -c plotly plotly
+conda install -c conda-forge statsmodels
 
