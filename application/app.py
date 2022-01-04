@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request
 import json
 import plotly
-from application.correlation_charts import create_chart_figure
+from correlation_charts import create_chart_figure
 
 cwd = os.getcwd()
 this_file = os.path.join(cwd, __name__)

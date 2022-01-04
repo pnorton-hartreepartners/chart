@@ -1,12 +1,10 @@
 import pandas as pd
 import os
+from itertools import combinations_with_replacement
 
-from mosaic.constants import DEV, path
+from mosaic.constants import DEV, path, file_for_data, file_for_reduced_data, xlsx_for_results
 from mosaic.mosaic_api_templates import api_config_dict
 from mosaic.mosaic_wapi import build_partial_url_kwargs, build_url, post_any_api, process_chart_data
-
-file_for_data = 'correlation_data.pkl'
-xlsx_for_results = 'correlation_results.xlsx'
 
 trader_curves = [('BRT-F', 'Dynamic'),
                  ('EBOB-S', 'Combo'),
@@ -123,7 +121,7 @@ def calc_correlation(df):
     corr_matrix_df = df.groupby(group_list)[value_list].corr(method='pearson')
     count_df = df.groupby(group_list).count()['value_x']
 
-    # function returns a matrix; we only want an upper (or lower) triangle value
+    # function returns a matrix for each pair; we only want an upper (or lower) triangle value
     mask = corr_matrix_df.index.get_level_values(None) == 'value_y'
     corr_df = corr_matrix_df[mask]['value_x']
     corr_df.index = corr_df.index.droplevel(level=None)
@@ -135,16 +133,34 @@ def calc_correlation(df):
 
 
 def build_self_join_data(df):
+    # drop these components of the multiindex
+    # leaving only the observation date in the index
     df.reset_index(['symbol', 'contract'], drop=False, inplace=True)
-    chart_df = pd.merge(df, df, how='inner',
+    # join on itself
+    return pd.merge(df, df, how='inner',
                         left_index=True, right_index=True,
                         suffixes=['_x', '_y'])
-    return chart_df
+
+
+def build_reduced_cartesian_product(df):
+    unique_index = df[['symbol_x', 'contract_x']].drop_duplicates(ignore_index=True).values
+    pairs = list(combinations_with_replacement(unique_index, 2))
+    masks = []
+    for left, right in pairs:
+        print(left, right)
+        symbol_x, contract_x = left
+        symbol_y, contract_y = right
+        mask = (df['symbol_x'] == symbol_x) & \
+               (df['contract_x'] == contract_x) & \
+               (df['symbol_y'] == symbol_y) & \
+               (df['contract_y'] == contract_y)
+        masks.append(mask)
+    super_mask = pd.concat(masks, axis='columns').any(axis='columns')
+    return df[super_mask]
 
 
 if __name__ == '__main__':
     env = DEV
-    pathfile = os.path.join(path, file_for_data)
 
     build_and_save_data = False
     calc_and_save_corr = True
@@ -153,14 +169,20 @@ if __name__ == '__main__':
         # build the data
         results = build_and_call_api(trader_curves, start='2021-01-01', periods=13)
         data_df = build_clean_dataset(results)
+        pathfile = os.path.join(path, file_for_data)
         data_df.to_pickle(pathfile)
 
     else:
         # load the data
+        pathfile = os.path.join(path, file_for_data)
         data_df = pd.read_pickle(pathfile)
 
     # build the data ready for analysis
     cartesian_product_df = build_self_join_data(data_df)
+    reduced_cartesian_product_df = build_reduced_cartesian_product(cartesian_product_df)
+
+    pathfile = os.path.join(path, file_for_reduced_data)
+    reduced_cartesian_product_df.to_pickle(pathfile)
 
     if calc_and_save_corr:
         correlation_df = calc_correlation(cartesian_product_df)

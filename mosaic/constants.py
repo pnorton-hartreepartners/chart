@@ -2,6 +2,10 @@ path = r'C:\Temp'
 # json_for_trader_curves_definitions = 'trader_curves_definitions.json'
 json_for_trader_curves_definitions = 'tempest.json'
 
+file_for_data = 'correlation_data.pkl'
+file_for_reduced_data = 'correlation_reduced_data.pkl'
+xlsx_for_results = 'correlation_results.xlsx'
+
 PROD = 'prod'
 DEV = 'dev'
 
