@@ -6,4 +6,5 @@ conda install matplotlib
 conda install -c anaconda openpyxl
 conda install -c plotly plotly
 conda install -c conda-forge statsmodels
+conda install -c anaconda flask
 

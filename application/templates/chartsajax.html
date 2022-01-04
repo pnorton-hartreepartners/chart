@@ -1,0 +1,26 @@
+<!doctype html>
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function cb(selection) {
+            $.getJSON({
+                url: "/callback", data: { 'mydata': selection }, success: function (result) {
+                    Plotly.newPlot('mychart', result, {staticPlot: true});;
+                }
+            });
+        }
+    </script>
+</head>
+
+<html>
+ <body>
+  <h1>Hello Plotly (but not Dash)</h1>
+  <input type="text" id="fname" name="fname" onchange="cb(this.value)">
+  <div id='mychart' class='chart'”></div>
+</body>
+<script type='text/javascript'>
+  var graphs = {{graphJSON | safe}};
+  Plotly.plot('mychart',graphs,{});
+</script>
+</html>

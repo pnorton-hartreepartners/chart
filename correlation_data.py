@@ -1,10 +1,9 @@
 import pandas as pd
 import os
+
 from mosaic.constants import DEV, path
 from mosaic.mosaic_api_templates import api_config_dict
 from mosaic.mosaic_wapi import build_partial_url_kwargs, build_url, post_any_api, process_chart_data
-import plotly.express as px
-
 
 file_for_data = 'correlation_data.pkl'
 xlsx_for_results = 'correlation_results.xlsx'
@@ -143,26 +142,12 @@ def build_self_join_data(df):
     return chart_df
 
 
-def create_scatter_matrix(df):
-    contract = '202110 minus 202111'
-    mask_x = df['contract_x'] == contract
-    mask_y = df['contract_y'] == contract
-    selection_df = df[mask_x & mask_y]
-    fig = px.scatter(data_frame=selection_df,
-                     x='value_x',
-                     y='value_y',
-                     facet_col='symbol_x', facet_row='symbol_y',
-                     trendline='ols')
-    fig.show()
-
-
 if __name__ == '__main__':
     env = DEV
     pathfile = os.path.join(path, file_for_data)
 
     build_and_save_data = False
     calc_and_save_corr = True
-    create_scatter_charts = True
 
     if build_and_save_data:
         # build the data
@@ -186,5 +171,3 @@ if __name__ == '__main__':
         with pd.ExcelWriter(pathfile) as writer:
             correlation_df.to_excel(writer, merge_cells=False, sheet_name='corr')
 
-    if create_scatter_charts:
-        create_scatter_matrix(cartesian_product_df)
