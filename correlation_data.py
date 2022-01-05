@@ -155,7 +155,7 @@ def build_reduced_cartesian_product(df):
                (df['symbol_y'] == symbol_y) & \
                (df['contract_y'] == contract_y)
         masks.append(mask)
-    super_mask = pd.concat(masks, axis='columns').any(axis='columns')
+    super_mask = pd.concat(masks, how='outer', axis='columns').any(axis='columns')
     return df[super_mask]
 
 
