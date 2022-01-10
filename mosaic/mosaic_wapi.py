@@ -54,9 +54,11 @@ def build_url(template_url, kwargs):
 
 
 def process_chart_data(response_dict, already_pivotted):
-    if response_dict == {'detail': 'There was an error parsing the body'}:
-        print('detail: There was an error parsing the body')
-        pivot_df = None
+
+    if isinstance(response_dict, dict):
+        if 'error' in response_dict.get('detail'):
+            print(f'detail: {response_dict.get("detail")}')
+            pivot_df = pd.DataFrame()
     else:
         if not already_pivotted:
             all_df = process_nonseasonal_data(response_dict)
