@@ -3,8 +3,8 @@ from mosaic.mosaic_api_templates import api_config_dict
 from mosaic.mosaic_wapi import build_partial_url_kwargs, build_url, post_any_api, process_chart_data
 
 chart_template_dict = {
-                          'start_date': '2015-01-01',
-                          'end_date': '2024-01-01',
+                          'start_date': '2000-01-01',
+                          'end_date': '2030-01-01',
                           'seasonality': 0,
                           'chartlets': None  # this is a list of chartlets
                       }
@@ -31,23 +31,28 @@ def _build_timespreads(start, periods):
     return [[front, back] for front, back in zip(months[:-1], months[1:])]
 
 
+def _build_outrights_back(end, periods):
+    months = pd.date_range(end=end, periods=periods, freq='MS')
+    return [[month.strftime('%Y%m')] for month in months]
+
+
+def _build_outright_decembers_back(end, periods):
+    months = pd.date_range(end=end, periods=periods * 12, freq='MS')
+    return [[month.strftime('%Y%m')] for month in months if month.month == 12]
+
+
+def _build_single_outright(month, periods):
+    return [[month.strftime('%Y%m')]]
+
+
 def _build_timespread_chartlet_name(product, contract_list):
     front, back = contract_list
     return product + ' | ' + front + ' minus ' + back
 
 
-def _split_timespread_chartlet_name(ss):
-    return ss
-
-
 def _build_outright_chartlet_name(product, contract_list):
     [front] = contract_list
     return product + ' | ' + front
-
-
-def _build_outrights_back(end, periods):
-    months = pd.date_range(end=end, periods=periods, freq='MS')
-    return [[month.strftime('%Y%m')] for month in months]
 
 
 def build_chartlets(expression, type_, contracts, name_func):
@@ -91,6 +96,7 @@ def build_and_call_api(trader_curves,
 
         # call the api
         result = post_any_api(url, payload=chart_template_dict)
+        print(chartlets, '/n')
         results.append(result)
     return results
 
