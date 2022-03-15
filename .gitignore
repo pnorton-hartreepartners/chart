@@ -2,4 +2,5 @@
 **.idea
 **.xml
 **.iml
+notebooks/.ipynb_checkpoints/*
 **/__pycache__/
